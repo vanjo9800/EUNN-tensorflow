@@ -4,6 +4,8 @@ Unitary neural network is able to solve gradient vanishing and gradient explosio
 
 If you find this work useful, please cite [arXiv:1612.05231](https://arxiv.org/pdf/1612.05231.pdf). The current implementation is developed by [Ivan Ivanov](https://github.com/vanjo9800).
 
+The paper and slides of the current implementation are provided under the *docs/* directory.
+
 ## Installation
 
 requires TensorFlow 1.2.0
