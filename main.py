@@ -3,15 +3,16 @@
 
 import numpy as np
 import os
-#os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 import tensorflow as tf
 import os
 
 from stacked_rnn import StackedRNN
 
-MEM_SIZES = [3000,1024,512] # use for enigma
-#MEM_SIZES = [32, 64, 128, 256, 512] # use for vigenere and autokey ciphers
+#MEM_SIZES = [3000,1024,512] # use for enigma
+MEM_SIZES = [32, 64, 128, 256, 512] # use for vigenere and autokey ciphers
 
+tf.app.flags.DEFINE_string("model","eurnn", "Model to use EURNN, or LSTM")
 tf.app.flags.DEFINE_bool("train", True, "Run the train loop (else eval model)")
 tf.app.flags.DEFINE_bool("vary_mem", False, "Train this model repeatedly for different memory sizes")
 tf.app.flags.DEFINE_integer("key_len", 6, "Maximum length of key for encoding/decoding message")
@@ -80,8 +81,8 @@ if not FLAGS.vary_mem and FLAGS.train:
 
 	tf.reset_default_graph()
 	# make bookkeping devices
-	FLAGS.meta_dir = 'meta/' + FLAGS.cipher + '/' # directory to save loss history, figures, etc.
-	FLAGS.save_dir = 'save/' + FLAGS.cipher + '/' # directory to save model
+	FLAGS.meta_dir = 'meta/' + FLAGS.cipher + '/' + FLAGS.model + '/' # directory to save loss history, figures, etc.
+	FLAGS.save_dir = 'save/' + FLAGS.cipher + '/' + FLAGS.model + '/' # directory to save model
 	os.makedirs(FLAGS.save_dir) if not os.path.exists(FLAGS.save_dir) else None
 	os.makedirs(FLAGS.meta_dir) if not os.path.exists(FLAGS.meta_dir) else None
 	log = Logger(FLAGS)
@@ -95,8 +96,8 @@ elif FLAGS.train:
 		FLAGS.rnn_size = m # change rnn memory size
 
 		# make bookkeping devices
-		FLAGS.meta_dir = 'meta/' + FLAGS.cipher + '-{}/'.format(m) # directory to save loss history, figures, etc.
-		FLAGS.save_dir = 'save/' + FLAGS.cipher + '-{}/'.format(m) # directory to save model
+		FLAGS.meta_dir = 'meta/' + FLAGS.cipher + FLAGS.model + '/' + '-{}/'.format(m) # directory to save loss history, figures, etc.
+		FLAGS.save_dir = 'save/' + FLAGS.cipher + FLAGS.model + '/' + '-{}/'.format(m) # directory to save model
 		os.makedirs(FLAGS.save_dir) if not os.path.exists(FLAGS.save_dir) else None
 		os.makedirs(FLAGS.meta_dir) if not os.path.exists(FLAGS.meta_dir) else None
 		log = Logger(FLAGS)
@@ -108,8 +109,8 @@ elif FLAGS.train:
 
 elif not FLAGS.vary_mem and not FLAGS.train:
 	# make bookkeping devices
-	FLAGS.meta_dir = 'meta/' + FLAGS.cipher + '/' # directory to save loss history, figures, etc.
-	FLAGS.save_dir = 'save/' + FLAGS.cipher + '/' # directory to save model
+	FLAGS.meta_dir = 'meta/' + FLAGS.cipher + '/' + FLAGS.model + '/'# directory to save loss history, figures, etc.
+	FLAGS.save_dir = 'save/' + FLAGS.cipher + '/' + FLAGS.model + '/'# directory to save model
 	os.makedirs(FLAGS.save_dir) if not os.path.exists(FLAGS.save_dir) else None
 	os.makedirs(FLAGS.meta_dir) if not os.path.exists(FLAGS.meta_dir) else None
 
