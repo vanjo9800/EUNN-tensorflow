@@ -7,6 +7,8 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 import tensorflow as tf
 
+from EUNN import EUNNCell
+
 # stacked recurrent neural network with LSTM cells
 class StackedRNN():
     def __init__(self, FLAGS, crack_mode=False):
@@ -35,8 +37,11 @@ class StackedRNN():
             for i in range(ncells):
                 cell = layers[i]
                 cell['rnn'] = tf.contrib.rnn.LSTMCell(rnn_size, state_is_tuple=True, initializer=rnn_init)
+                #cell['rnn'] = EUNNCell(rnn_size, 8, False, True)
                 cell['istate_batch'] = cell['rnn'].zero_state(batch_size=batch_size, dtype=tf.float32)
                 cell['istate'] = cell['rnn'].zero_state(batch_size=1, dtype=tf.float32)
+                #cell['istate_batch'] = tf.complex(tf.zeros([batch_size,rnn_size]),tf.zeros([batch_size,rnn_size]))
+                #cell['istate'] = tf.complex(tf.zeros([1,rnn_size]),tf.zeros([1,rnn_size])) 
             layers[-1]['W_fc1'] = tf.get_variable("W_fc1", [rnn_size, ylen], initializer=xavier_dense)
 
         self.y_hat_batch = y_hat_batch = self.forward(tsteps=tsteps, reuse=False)
@@ -54,6 +59,7 @@ class StackedRNN():
         for i in range(self.ncells):
             self.layers[i]['state_c'] = self.layers[i]['istate'].c.eval()
             self.layers[i]['state_h'] = self.layers[i]['istate'].h.eval()
+            #self.layers[i]['state'] = self.layers[i]['istate'].eval()
             
     def forward(self, tsteps, reuse):
         with tf.variable_scope(self.scope, reuse=reuse):
@@ -65,7 +71,7 @@ class StackedRNN():
                 cell = self.layers[i]['rnn']
                 cell_scope = self.scope + '_cell' + str(i)
                 hs, self.layers[i]['fstate'] = tf.contrib.legacy_seq2seq.rnn_decoder(hs, state, cell, scope=cell_scope)
-            rnn_out = tf.reshape(tf.concat(hs, 1), [-1, self.rnn_size])
+            rnn_out = tf.real(tf.reshape(tf.concat(hs, 1), [-1, self.rnn_size]))
             rnn_out = tf.nn.dropout(rnn_out, self.keep_prob)
 
             logps = tf.matmul(rnn_out, self.layers[-1]['W_fc1'])
@@ -87,16 +93,19 @@ class StackedRNN():
         feed = {self.x : x, self.keep_prob: 1}
         fetch = [self.y_hat]
         for i in range(self.ncells):
-            feed[self.layers[i]['istate'].c] = self.layers[i]['state_c']
-            feed[self.layers[i]['istate'].h] = self.layers[i]['state_h']
-            fetch.append(self.layers[i]['fstate'].c) ; fetch.append(self.layers[i]['fstate'].h)
+           feed[self.layers[i]['istate'].c] = self.layers[i]['state_c']
+           feed[self.layers[i]['istate'].h] = self.layers[i]['state_h']
+           fetch.append(self.layers[i]['fstate'].c) ; fetch.append(self.layers[i]['fstate'].h)
+           #feed[self.layers[i]['istate']] = self.layers[i]['state']
+           #fetch.append(self.layers[i]['fstate'])
 
         got = self.sess.run(fetch, feed)
         y_hat = got[0] ; states = got[1:]
 
         for i in range(self.ncells):
-            self.layers[i]['state_c'] = states[2*i]
-            self.layers[i]['state_h'] = states[2*i+1]
+           self.layers[i]['state_c'] = states[2*i]
+           self.layers[i]['state_h'] = states[2*i+1]
+           #self.layers[i]['state'] = states[i]
 
         if return_state:
             return self.ones_at_maxes(y_hat), (states[0], states[1])

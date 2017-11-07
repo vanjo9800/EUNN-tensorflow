@@ -28,7 +28,8 @@ def accuracy(model, data):
 # qualitative eval
 def sample(model, data, FLAGS):
     model.reset_states()
-    key = unicode("KEY", "utf-8") ; plaintext = unicode("YOUKNOWNOTHINGJONSNOW", "utf-8")
+    #key = str("KEY", "utf-8") ; plaintext = str("YOUKNOWNOTHINGJONSNOW", "utf-8")
+    key = str("KEY") ; plaintext = str("YOUKNOWNOTHINGJONSNOW")
     ciphertext = key + '-'*(data.key_len - len(key)) + data.encode(key, plaintext)
     decoded = ''
     for i in range(len(ciphertext)):

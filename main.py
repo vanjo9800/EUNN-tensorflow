@@ -3,7 +3,7 @@
 
 import numpy as np
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+#os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 import tensorflow as tf
 import os
 
@@ -16,7 +16,7 @@ tf.app.flags.DEFINE_bool("train", True, "Run the train loop (else eval model)")
 tf.app.flags.DEFINE_bool("vary_mem", False, "Train this model repeatedly for different memory sizes")
 tf.app.flags.DEFINE_integer("key_len", 6, "Maximum length of key for encoding/decoding message")
 tf.app.flags.DEFINE_integer("tsteps", 20, "Number of timesteps for backpropagation")
-tf.app.flags.DEFINE_integer("rnn_size", 256, "Number of hidden units in the rnn")
+tf.app.flags.DEFINE_integer("rnn_size", 64, "Number of hidden units in the rnn")
 tf.app.flags.DEFINE_integer("ncells", 1, "Number of recurrent cells to stack")
 tf.app.flags.DEFINE_integer("batch_size", 50, "Size of batch in minibatch gradient descent")
 tf.app.flags.DEFINE_integer("save_every", 5000, "Save model after this number of train steps")
@@ -78,6 +78,7 @@ def eval_model(FLAGS, model, data, log):
 # train model
 if not FLAGS.vary_mem and FLAGS.train:
 
+	tf.reset_default_graph()
 	# make bookkeping devices
 	FLAGS.meta_dir = 'meta/' + FLAGS.cipher + '/' # directory to save loss history, figures, etc.
 	FLAGS.save_dir = 'save/' + FLAGS.cipher + '/' # directory to save model
