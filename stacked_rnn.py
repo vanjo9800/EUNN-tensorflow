@@ -28,7 +28,8 @@ class StackedRNN():
         self.x = x = tf.placeholder(tf.float32, shape=[None, None, xlen], name="x")
         self.y = y = tf.placeholder(tf.float32, shape=[None, None, ylen], name="y")
         self.scope = 'model'
-        self.save_path = save_path = FLAGS.save_dir + 'model.ckpt'
+        self.model = FLAGS.model
+        self.save_path = save_path = FLAGS.save_dir + self.model + 'model.ckpt'
 
         rnn_init = tf.truncated_normal_initializer(stddev=0.075, dtype=tf.float32)
         xavier_dense = tf.truncated_normal_initializer(stddev=1./np.sqrt(rnn_size), dtype=tf.float32)
@@ -36,12 +37,14 @@ class StackedRNN():
         with tf.variable_scope(self.scope,reuse=False):
             for i in range(ncells):
                 cell = layers[i]
-                cell['rnn'] = tf.contrib.rnn.LSTMCell(rnn_size, state_is_tuple=True, initializer=rnn_init)
-                #cell['rnn'] = EUNNCell(rnn_size, 8, False, True)
-                cell['istate_batch'] = cell['rnn'].zero_state(batch_size=batch_size, dtype=tf.float32)
-                cell['istate'] = cell['rnn'].zero_state(batch_size=1, dtype=tf.float32)
-                #cell['istate_batch'] = tf.complex(tf.zeros([batch_size,rnn_size]),tf.zeros([batch_size,rnn_size]))
-                #cell['istate'] = tf.complex(tf.zeros([1,rnn_size]),tf.zeros([1,rnn_size])) 
+                if self.model == "lstm":
+                    cell['rnn'] = tf.contrib.rnn.LSTMCell(rnn_size, state_is_tuple=True, initializer=rnn_init)
+                    cell['istate_batch'] = cell['rnn'].zero_state(batch_size=batch_size, dtype=tf.float32)
+                    cell['istate'] = cell['rnn'].zero_state(batch_size=1, dtype=tf.float32)
+                elif self.model == "eurnn":
+                    cell['rnn'] = EUNNCell(rnn_size, 8, False, True)
+                    cell['istate_batch'] = tf.complex(tf.zeros([batch_size,rnn_size]),tf.zeros([batch_size,rnn_size]))
+                    cell['istate'] = tf.complex(tf.zeros([1,rnn_size]),tf.zeros([1,rnn_size])) 
             layers[-1]['W_fc1'] = tf.get_variable("W_fc1", [rnn_size, ylen], initializer=xavier_dense)
 
         self.y_hat_batch = y_hat_batch = self.forward(tsteps=tsteps, reuse=False)
@@ -57,9 +60,11 @@ class StackedRNN():
         
     def reset_states(self):
         for i in range(self.ncells):
-            self.layers[i]['state_c'] = self.layers[i]['istate'].c.eval()
-            self.layers[i]['state_h'] = self.layers[i]['istate'].h.eval()
-            #self.layers[i]['state'] = self.layers[i]['istate'].eval()
+            if self.model == "lstm":
+                self.layers[i]['state_c'] = self.layers[i]['istate'].c.eval()
+                self.layers[i]['state_h'] = self.layers[i]['istate'].h.eval()
+            elif self.model == "eurnn":
+                self.layers[i]['state'] = self.layers[i]['istate'].eval()
             
     def forward(self, tsteps, reuse):
         with tf.variable_scope(self.scope, reuse=reuse):
@@ -93,19 +98,23 @@ class StackedRNN():
         feed = {self.x : x, self.keep_prob: 1}
         fetch = [self.y_hat]
         for i in range(self.ncells):
-           feed[self.layers[i]['istate'].c] = self.layers[i]['state_c']
-           feed[self.layers[i]['istate'].h] = self.layers[i]['state_h']
-           fetch.append(self.layers[i]['fstate'].c) ; fetch.append(self.layers[i]['fstate'].h)
-           #feed[self.layers[i]['istate']] = self.layers[i]['state']
-           #fetch.append(self.layers[i]['fstate'])
+           if self.model == "lstm":
+                feed[self.layers[i]['istate'].c] = self.layers[i]['state_c']
+                feed[self.layers[i]['istate'].h] = self.layers[i]['state_h']
+                fetch.append(self.layers[i]['fstate'].c) ; fetch.append(self.layers[i]['fstate'].h)
+           elif self.model == "eurnn":
+                feed[self.layers[i]['istate']] = self.layers[i]['state']
+                fetch.append(self.layers[i]['fstate'])
 
         got = self.sess.run(fetch, feed)
         y_hat = got[0] ; states = got[1:]
 
         for i in range(self.ncells):
-           self.layers[i]['state_c'] = states[2*i]
-           self.layers[i]['state_h'] = states[2*i+1]
-           #self.layers[i]['state'] = states[i]
+            if self.model == "lstm":
+                self.layers[i]['state_c'] = states[2*i]
+                self.layers[i]['state_h'] = states[2*i+1]
+            elif self.model == "eurnn":
+                self.layers[i]['state'] = states[i]
 
         if return_state:
             return self.ones_at_maxes(y_hat), (states[0], states[1])
