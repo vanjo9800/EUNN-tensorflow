@@ -7,7 +7,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 import tensorflow as tf
 
-from EUNN import EUNNCell
+from EUNN.EUNN import EUNNCell
 
 # stacked recurrent neural network with LSTM cells
 class StackedRNN():
@@ -30,6 +30,7 @@ class StackedRNN():
         self.scope = 'model'
         self.model = FLAGS.model
         self.save_path = save_path = FLAGS.save_dir + self.model + 'model.ckpt'
+        print(self.save_path,"Putechka")
 
         rnn_init = tf.truncated_normal_initializer(stddev=0.075, dtype=tf.float32)
         xavier_dense = tf.truncated_normal_initializer(stddev=1./np.sqrt(rnn_size), dtype=tf.float32)
@@ -159,9 +160,13 @@ class StackedRNN():
         self.saver = tf.train.Saver(tf.global_variables())
         load_was_success = True # yes, I'm being optimistic
         try:
+            print(save_dir,save_path, ckpt, load_path,"\n")
             save_dir = '/'.join(self.save_path.split('/')[:-1])
+            print(save_dir,save_path, ckpt, load_path)
             ckpt = tf.train.get_checkpoint_state(save_dir)
+            print(save_dir,save_path, ckpt, load_path)
             load_path = ckpt.model_checkpoint_path
+            print(save_dir,save_path, ckpt, load_path)
             self.saver.restore(self.sess, load_path)
         except:
             print( "no saved model to load. starting new session" )
