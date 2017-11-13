@@ -1,16 +1,12 @@
 from __future__ import absolute_import
 from __future__ import division
-from __future__	import print_function
+from __future__ import print_function
 
 import numpy as np
 import argparse
 import tensorflow as tf
-import time
 
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # or any {'0', '1', '2'}
-
-from EURNN import EURNNCell
+from EUNN import EUNNCell
 
 import random
 
@@ -20,15 +16,14 @@ from tensorflow.examples.tutorials.mnist import input_data
 random.seed(2017)
 
 
-
 def mnist_data(object, n_batch, ind, dataset):
 
 	mnist = object
 	if dataset == "train":
 		xx, yy = mnist.train.next_batch(n_batch)
-	elif dataset == "validation": 
+	elif dataset == "validation":
 		xx, yy = mnist.validation.next_batch(n_batch)
-	elif dataset == "test": 
+	elif dataset == "test":
 		xx, yy = mnist.test.next_batch(n_batch)
 
 	step1 = np.array(xx)
@@ -39,18 +34,19 @@ def mnist_data(object, n_batch, ind, dataset):
 	x = []
 	y = []
 	for i in range(n_batch):
-		x.append(xx[i].reshape((28*28, 1)))
+		x.append(xx[i].reshape((28 * 28, 1)))
 		y.append(yy[i])
-	
+
 	shuffle_list = list(range(n_batch))
 	shuffle(shuffle_list)
-	
+
 	x = np.array([x[i] for i in shuffle_list])
 	y = np.array([y[i] for i in shuffle_list]).astype(np.int64)
 
 	return x, y
 
-def main(model, n_iter, n_batch, n_hidden, capacity, comp, FFT):
+
+def main(model, n_iter, n_batch, n_hidden, capacity, comp, fft):
 
 	# --- Set data params ----------------
 	n_input = 1
@@ -62,56 +58,52 @@ def main(model, n_iter, n_batch, n_hidden, capacity, comp, FFT):
 	n_steps = 28 * 28
 	n_classes = 10
 
-
-
-
 	# --- Create graph and compute gradients ----------------------
 	x = tf.placeholder("float", [None, n_steps, n_input])
 	y = tf.placeholder("int64", [None])
-	
 
 	# --- Input to hidden layer ----------------------
 	if model == "LSTM":
-		cell = tf.nn.rnn_cell.BasicLSTMCell(n_hidden, state_is_tuple=True, forget_bias=1)
+		cell = tf.nn.rnn_cell.BasicLSTMCell(
+		    n_hidden, state_is_tuple=True, forget_bias=1)
 		hidden_out, _ = tf.nn.dynamic_rnn(cell, x, dtype=tf.float32)
-        elif model == "EURNN":
-                cell = EURNNCell(n_hidden, capacity, FFT, comp)
-                if comp:
-                        hidden_out_comp, _ = tf.nn.dynamic_rnn(cell, x, dtype=tf.complex64)
-                        hidden_out = tf.real(hidden_out_comp)
-                else:
-                        hidden_out, _ = tf.nn.dynamic_rnn(cell, x, dtype=tf.float32)
+	elif model == "EUNN":
+			cell = EUNNCell(n_hidden, capacity, fft, comp)
+			if comp:
+					hidden_out_comp, _ = tf.nn.dynamic_rnn(cell, x, dtype=tf.complex64)
+					hidden_out = tf.real(hidden_out_comp)
+			else:
+					hidden_out, _ = tf.nn.dynamic_rnn(cell, x, dtype=tf.float32)
 
 	# --- Hidden Layer to Output ----------------------
-	V_init_val = np.sqrt(6.)/np.sqrt(n_output + n_input)
+	V_init_val = np.sqrt(6.) / np.sqrt(n_output + n_input)
 
-	V_weights = tf.get_variable("V_weights", shape = [n_hidden, n_classes], \
+	V_weights = tf.get_variable("V_weights", shape=[n_hidden, n_classes],
 			dtype=tf.float32, initializer=tf.random_uniform_initializer(-V_init_val, V_init_val))
-	V_bias = tf.get_variable("V_bias", shape=[n_classes], \
+	V_bias = tf.get_variable("V_bias", shape=[n_classes],
 			dtype=tf.float32, initializer=tf.constant_initializer(0.01))
 
 	hidden_out_list = tf.unstack(hidden_out, axis=1)
 	temp_out = tf.matmul(hidden_out_list[-1], V_weights)
-	output_data = tf.nn.bias_add(temp_out, V_bias) 
-	
-	cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=output_data, labels=y))
+	output_data = tf.nn.bias_add(temp_out, V_bias)
+
+	cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
+	    logits=output_data, labels=y))
 	correct_pred = tf.equal(tf.argmax(output_data, 1), y)
 	accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
-
-
 	# --- Initialization --------------------------------------------------
-	optimizer = tf.train.RMSPropOptimizer(learning_rate=0.0001, decay=0.9).minimize(cost)
+	optimizer = tf.train.RMSPropOptimizer(
+	    learning_rate=0.0001, decay=0.9).minimize(cost)
 	init = tf.global_variables_initializer()
 
 	# --- Training Loop ---------------------------------------------------------------
 
-
-        config = tf.ConfigProto()
-        #config.gpu_options.per_process_gpu_memory_fraction = 0.2
-        config.log_device_placement = False
-        config.allow_soft_placement = False
-        with tf.Session(config=config) as sess:
+	config = tf.ConfigProto()
+	# config.gpu_options.per_process_gpu_memory_fraction = 0.2
+	config.log_device_placement = False
+	config.allow_soft_placement = False
+	with tf.Session(config=config) as sess:
 
 		# --- Create data --------------------
 
@@ -120,26 +112,20 @@ def main(model, n_iter, n_batch, n_hidden, capacity, comp, FFT):
 
 		mnist = input_data.read_data_sets("/tmp/data/", one_hot=False)
 
-
-
-
 		sess.run(init)
 
 		step = 0
-
 
 		while step < n_iter:
 
 			batch_x, batch_y = mnist_data(mnist, n_batch, ind, "train")
 
-			loss, acc = sess.run([cost, accuracy], feed_dict={x:batch_x,y:batch_y})
+			loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x, y: batch_y})
 
 			sess.run(optimizer, feed_dict={x: batch_x, y: batch_y})
-			print(" Iter: " + str(step) + ", Minibatch Loss= " + \
-			  "{:.6f}".format(loss) + ", Training Accuracy= " + \
+			print(" Iter: " + str(step) + ", Minibatch Loss= " +
+			  "{:.6f}".format(loss) + ", Training Accuracy= " +
 			  "{:.5f}".format(acc))
-                        resultFile.write("{:.5f}".format(acc) + " " + "{:.6f}".format(time.time()-timeStartWall) + "\n")
-
 
 			if step % 500 == 499:
 				val_x, val_y = mnist_data(mnist, n_val, ind, "validation")
@@ -150,22 +136,19 @@ def main(model, n_iter, n_batch, n_hidden, capacity, comp, FFT):
 					batch_x = val_x[val_index: val_index + 100]
 					batch_y = val_y[val_index: val_index + 100]
 					val_index += 100
-					val_acc_list.append(sess.run(accuracy, feed_dict={x: batch_x, y: batch_y}))
+					val_acc_list.append(
+					    sess.run(accuracy, feed_dict={x: batch_x, y: batch_y}))
 					val_loss_list.append(sess.run(cost, feed_dict={x: batch_x, y: batch_y}))
 				val_acc = np.mean(val_acc_list)
 				val_loss = np.mean(val_loss_list)
-				print("Iter " + str(step) + ", Validation Loss= " + \
-				  "{:.6f}".format(val_loss) + ", Validation Accuracy= " + \
+				print("Iter " + str(step) + ", Validation Loss= " +
+				  "{:.6f}".format(val_loss) + ", Validation Accuracy= " +
 				  "{:.5f}".format(val_acc))
 
 			step += 1
 
-			
-				
-
 		print("Optimization Finished!")
 
-		
 		# --- test ----------------------
 
 		test_x, test_y = mnist_data(mnist, n_test, ind, "test")
@@ -184,27 +167,22 @@ def main(model, n_iter, n_batch, n_hidden, capacity, comp, FFT):
 		test_acc = np.mean(test_acc_list)
 		test_loss = np.mean(test_loss_list)
 
-		print("Test result: Loss= " + "{:.6f}".format(test_loss) + ", Accuracy= " + "{:.5f}".format(test_acc))
+		print("Test result: Loss= " +
+		      "{:.6f}".format(test_loss) + ", Accuracy= " + "{:.5f}".format(test_acc))
 
 
-				
+if __name__ == "__main__":
 
-
-
-if __name__=="__main__":
-        global timeStartProcess, timeStartWall
-        timeStartProcess = time.clock()
-        timeStartWall = time.time()
-	
-        parser = argparse.ArgumentParser(
+	parser = argparse.ArgumentParser(
 		description="Pixel-Permuted MNIST Task")
-	parser.add_argument("model", default='LSTM', help='Model name: LSTM, EURNN')
-	parser.add_argument('--n_iter', '-I', type=int, default=50000, help='training iteration number')
+	parser.add_argument("model", default='LSTM', help='Model name: LSTM, EUNN')
+	parser.add_argument('--n_iter', '-I', type=int,
+	                    default=20000, help='training iteration number')
 	parser.add_argument('--n_batch', '-B', type=int, default=128, help='batch size')
-	parser.add_argument('--n_hidden', '-H', type=int, default=128, help='hidden layer size')
-	parser.add_argument('--capacity', '-L', type=int, default=2, help='Tunable style capacity, only for EURNN, default value is 2')
-	parser.add_argument('--comp', '-C', type=str, default="False", help='Complex domain or Real domain. Default is False: real domain')
-	parser.add_argument('--FFT', '-F', type=str, default="False", help='FFT style, only for EURNN, default is False')
+	parser.add_argument('--n_hidden', '-H', type=int, default=512, help='hidden layer size')
+	parser.add_argument('--capacity', '-L', type=int, default=2, help='Tunable style capacity, default value is 2')
+	parser.add_argument('--comp', '-C', type=str, default="True", help='Complex domain or Real domain. Default is True: complex domain')
+	parser.add_argument('--fft', '-F', type=str, default="False", help='fft style, only for EUNN, default is False: tunable style')
 
 	args = parser.parse_args()
 	dict = vars(args)
@@ -222,18 +200,8 @@ if __name__=="__main__":
 				'n_hidden': dict['n_hidden'],
 				'capacity': dict['capacity'],
 				'comp': dict['comp'],
-				'FFT': dict['FFT'],
+				'fft': dict['fft'],
 			}
 
-        test = ""
-        if kwargs['model'] == "LSTM":
-            test="LSTM_" + str(kwargs['n_iter']) + ".plot"
-        elif kwargs['FFT'] == True:
-            test="FFT_MNIST_" + str(kwargs['model']) + str(kwargs['n_iter']) + ".plot"
-        else:
-            test="Tunable_MNIST_" + str(kwargs['model']) + str(kwargs['n_iter']) + ".plot"
-        global resultFile 
-        resultFile = open(test,'w')
 
-        main(**kwargs)
-        print("CPU time: "+ str(time.clock() - timeStartProcess) + " Real time: " + str(time.time() - timeStartWall)+"\n")
+	main(**kwargs)
