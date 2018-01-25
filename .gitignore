@@ -1,0 +1,4 @@
+__pycache__
+retrain_logs
+speech_commands_train
+*.log

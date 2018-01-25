@@ -20,7 +20,7 @@ from __future__ import division
 from __future__ import print_function
 
 import math
-from EUNN.EUNN import EUNNCell
+from model.EUNN import EUNNCell
 import numpy as np
 import tensorflow as tf
 

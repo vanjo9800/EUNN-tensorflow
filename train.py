@@ -78,8 +78,8 @@ import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
-import input_data
-import models
+import input.input_data as input_data
+import model.models as models
 from tensorflow.python.platform import gfile
 
 FLAGS = None
@@ -91,6 +91,9 @@ def main(_):
 
   # Start a new TensorFlow session.
   sess = tf.InteractiveSession()
+  trainLogger = open("train.log","w")
+  validationLogger = open("val.log","w")
+  testLogger = open("test.log","w")
 
   # Begin by making sure we have the training data we need. If you already have
   # training data of your own, use `--data_url= ` on the command line to avoid
@@ -221,6 +224,8 @@ def main(_):
     tf.logging.info('Step #%d: rate %f, accuracy %.1f%%, cross entropy %f' %
                     (training_step, learning_rate_value, train_accuracy * 100,
                      cross_entropy_value))
+    trainLogger.write(str(training_step) + " " + str(train_accuracy) + " " + str(cross_entropy_value))
+    
     is_last_step = (training_step == training_steps_max)
     if (training_step % FLAGS.eval_step_interval) == 0 or is_last_step:
       set_size = audio_processor.set_size('validation')
@@ -249,6 +254,7 @@ def main(_):
       tf.logging.info('Confusion Matrix:\n %s' % (total_conf_matrix))
       tf.logging.info('Step %d: Validation accuracy = %.1f%% (N=%d)' %
                       (training_step, total_accuracy * 100, set_size))
+      validationLogger.write(str(training_step) + " " + str(total_accuracy) + " " + str(total_conf_matrix))
 
     # Save the model checkpoint periodically.
     if (training_step % FLAGS.save_step_interval == 0 or
@@ -281,6 +287,11 @@ def main(_):
   tf.logging.info('Confusion Matrix:\n %s' % (total_conf_matrix))
   tf.logging.info('Final test accuracy = %.1f%% (N=%d)' % (total_accuracy * 100,
                                                            set_size))
+  testLogger.write(str(total_accuracy) + " " + str(total_conf_matrix))
+  
+  trainLogger.close()
+  validationLogger.close()
+  testLogger.close()
 
 
 if __name__ == '__main__':
@@ -295,7 +306,7 @@ if __name__ == '__main__':
   parser.add_argument(
       '--data_dir',
       type=str,
-      default='/tmp/speech_dataset/',
+      default='/data/google-speech/',
       help="""\
       Where to download the speech training data to.
       """)
@@ -417,7 +428,7 @@ if __name__ == '__main__':
   parser.add_argument(
       '--model_architecture',
       type=str,
-      default='conv',
+      default='eurnn',
       help='What model architecture to use')
   parser.add_argument(
       '--check_nans',
