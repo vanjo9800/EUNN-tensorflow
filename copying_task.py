@@ -40,6 +40,7 @@ def main(model, T, n_iter, n_batch, n_hidden, capacity, comp, fft):
     y = tf.placeholder("int64", [None, n_steps])
 
     input_data = tf.one_hot(x, n_input, dtype=tf.float32)
+    logger = open("run.log","w")
 
     # --- Input to hidden layer ----------------------
     if model == "LSTM":
@@ -111,6 +112,7 @@ def main(model, T, n_iter, n_batch, n_hidden, capacity, comp, fft):
 
             print(" Iter " + str(step) + ", Minibatch Loss= " +
                   "{:.6f}".format(loss) + ", Training Accuracy= " + "{:.5f}".format(acc))
+            logger.write(str(step) + " " + "{:.6f}".format(loss) + " " + "{:.5f}".format(acc) + "\n")
 
             step += 1
 
@@ -122,6 +124,8 @@ def main(model, T, n_iter, n_batch, n_hidden, capacity, comp, fft):
         test_loss = sess.run(cost, feed_dict={x: test_x, y: test_y})
         print("Test result: Loss= " +
               "{:.6f}".format(test_loss) + ", Accuracy= " + "{:.5f}".format(test_acc))
+        logger.write("{:.6f}".format(test_loss) + " " + "{:.5f}".format(test_acc) + "\n")
+        logger.close()
 
 
 if __name__ == "__main__":
