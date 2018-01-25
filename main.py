@@ -5,9 +5,8 @@ import numpy as np
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 import tensorflow as tf
-import os
 
-from stacked_rnn import StackedRNN
+from model.stacked_rnn import StackedRNN
 
 #MEM_SIZES = [3000,1024,512] # use for enigma
 MEM_SIZES = [32, 64, 128, 256, 512] # use for vigenere and autokey ciphers
@@ -45,10 +44,10 @@ else:
 ##### make cipher dataloader #####
 data = None
 if FLAGS.cipher == ciphers[0]:
-	from vigenere import Vigenere
+	from ciphers.vigenere import Vigenere
 	data = Vigenere(FLAGS.A, tsteps=FLAGS.tsteps, key_len=FLAGS.key_len)
 elif FLAGS.cipher == ciphers[1]:
-	from autokey import Autokey
+	from ciphers.autokey import Autokey
 	data = Autokey(FLAGS.A, tsteps=FLAGS.tsteps, key_len=FLAGS.key_len)
 elif FLAGS.cipher == ciphers[2]:
 	print("Note: you must run this in Python 2 because Python 3 does not have the crypto_enigma module yet.")

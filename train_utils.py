@@ -10,9 +10,9 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 import tensorflow as tf
 
-import matplotlib as mpl
-mpl.use('Agg')
-import matplotlib.pyplot as plt
+#import matplotlib as mpl
+#mpl.use('Agg')
+#import matplotlib.pyplot as plt
 
 # quantitative eval
 def accuracy(model, data):
@@ -127,35 +127,35 @@ class Logger():
                 hist.append(data)
         return np.vstack(hist)
 
-def plot_stats(log, FLAGS):
-    loss_hist = log.read('loss')
-    acc_hist = log.read('acc')
-    f1 = plt.figure(figsize=[16,5])
-
-    plt.subplot(121)
-    plt.plot(loss_hist[:,0], loss_hist[:,1], linewidth=3.0, label='loss')
-    plt.title('Loss', fontsize=14)
-    plt.xlabel('train step', fontsize=14) ; plt.setp(plt.gca().axes.get_xticklabels(), fontsize=14)
-    plt.ylabel('loss', fontsize=14) ; plt.setp(plt.gca().axes.get_yticklabels(), fontsize=14)
-    plt.ylim([0,45])
-
-    plt.subplot(122)
-    plt.plot(acc_hist[:,0], acc_hist[:,1], linewidth=3.0, label='accuracy')
-    plt.title('Test accuracy', fontsize=14)
-    plt.xlabel('train step', fontsize=14) ; plt.setp(plt.gca().axes.get_xticklabels(), fontsize=14)
-    plt.ylabel('accuracy (%)', fontsize=14) ; plt.setp(plt.gca().axes.get_yticklabels(), fontsize=14)
-
-    tt_sec = np.sum(loss_hist[:,2])
-    m, s = divmod(tt_sec, 60)
-    h, m = divmod(m, 60)
-    tt_pretty = "%02dh %02dm %02ds"%(h, m, s)
-    results_msg = '\nlearning rate : {}\nbatch size: {}\ntrain time: {}\nfinal accuracy: {:.2f}%'\
-        .format(FLAGS.lr, FLAGS.batch_size, tt_pretty, acc_hist[-1,1])
-    print('\nTRAIN SUMMARY:' + results_msg + '\n')
-    f1.text(0.92, .50, results_msg, ha='left', va='center', fontsize=12)
-    plt.ylim([0,100])
-
-    title = "RNN on {} task".format(FLAGS.cipher[0].upper() + FLAGS.cipher[1:])
-    f1.text(0.4, .97, title, ha='left', va='center', fontsize=18)
-
-    f1.savefig('./{}train-{}.png'.format(FLAGS.meta_dir, FLAGS.cipher), bbox_inches='tight')
+#def plot_stats(log, FLAGS):
+#    loss_hist = log.read('loss')
+#    acc_hist = log.read('acc')
+#    f1 = plt.figure(figsize=[16,5])
+#
+#    plt.subplot(121)
+#    plt.plot(loss_hist[:,0], loss_hist[:,1], linewidth=3.0, label='loss')
+#    plt.title('Loss', fontsize=14)
+#    plt.xlabel('train step', fontsize=14) ; plt.setp(plt.gca().axes.get_xticklabels(), fontsize=14)
+#    plt.ylabel('loss', fontsize=14) ; plt.setp(plt.gca().axes.get_yticklabels(), fontsize=14)
+#    plt.ylim([0,45])
+#
+#    plt.subplot(122)
+#    plt.plot(acc_hist[:,0], acc_hist[:,1], linewidth=3.0, label='accuracy')
+#    plt.title('Test accuracy', fontsize=14)
+#    plt.xlabel('train step', fontsize=14) ; plt.setp(plt.gca().axes.get_xticklabels(), fontsize=14)
+#    plt.ylabel('accuracy (%)', fontsize=14) ; plt.setp(plt.gca().axes.get_yticklabels(), fontsize=14)
+#
+#    tt_sec = np.sum(loss_hist[:,2])
+#    m, s = divmod(tt_sec, 60)
+#    h, m = divmod(m, 60)
+#    tt_pretty = "%02dh %02dm %02ds"%(h, m, s)
+#    results_msg = '\nlearning rate : {}\nbatch size: {}\ntrain time: {}\nfinal accuracy: {:.2f}%'\
+#        .format(FLAGS.lr, FLAGS.batch_size, tt_pretty, acc_hist[-1,1])
+#    print('\nTRAIN SUMMARY:' + results_msg + '\n')
+#    f1.text(0.92, .50, results_msg, ha='left', va='center', fontsize=12)
+#    plt.ylim([0,100])
+#
+#    title = "RNN on {} task".format(FLAGS.cipher[0].upper() + FLAGS.cipher[1:])
+#    f1.text(0.4, .97, title, ha='left', va='center', fontsize=18)
+#
+#    f1.savefig('./{}train-{}.png'.format(FLAGS.meta_dir, FLAGS.cipher), bbox_inches='tight')
