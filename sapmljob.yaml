@@ -1,0 +1,11 @@
+job:
+	name: "fb-babi"
+	execution:
+		image: "tensorflow/tensorflow:1.3.0-gpu-py3"
+		command: "bash ./train.sh"
+		completionTime: "10m"
+		resources:
+			cpus: 1
+			memory: 8192
+			gpus: 1
+	env:
