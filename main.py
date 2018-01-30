@@ -12,17 +12,16 @@ from util import *
 
 if __name__ == '__main__':
     model = "LSTM"
-    trainData = "/data/fb-babi/"
-    options,_ = getopt.getopt(sys.argv[1:], '', ['model=', 'train_data='])
+    trainData = "en-10k"
+    options,_ = getopt.getopt(sys.argv[1:], '', ['model=', 'data='])
     for opt in options:
         if opt[0] == '--model':
             model = opt[1]
-        elif opt[0] == '--train_data':
+        elif opt[0] == '--data':
             trainData = opt[1]
    
-    dirname = os.path.dirname(__file__)
-    ckpts_dir = os.path.join(dirname , 'checkpoints')
-    data_dir = os.path.join(dirname, trainData)
+    ckpts_dir = '/data/fb-babi-model/checkpoints'
+    data_dir = '/data/fb-babi/processed/'
     llprint("Loading Dictionary ... ")
     lexicon_dict = load(os.path.join(data_dir, 'lexicon-dict.pkl'))
     question_code = lexicon_dict["?"]
@@ -42,8 +41,8 @@ if __name__ == '__main__':
     tasks_results = {} 
 
     train_files = []
-    for entryname in os.listdir(trainData+'/train/'):
-        entry_path = os.path.join(trainData+'/train/', entryname)
+    for entryname in os.listdir(data_dir +'/train/'):
+        entry_path = os.path.join(data_dir +'/train/', entryname)
         if os.path.isfile(entry_path):
             train_files.append(entry_path)
     train_files.sort()
