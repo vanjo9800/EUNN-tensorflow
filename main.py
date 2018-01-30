@@ -25,6 +25,8 @@ if __name__ == '__main__':
     data_dir = os.path.join(dirname, trainData)
     llprint("Loading Dictionary ... ")
     lexicon_dict = load(os.path.join(data_dir, 'lexicon-dict.pkl'))
+    question_code = lexicon_dict["?"]
+    target_code = lexicon_dict["-"]
     llprint("Done!\n")
     logger = open("run.log","w")
 
@@ -37,6 +39,7 @@ if __name__ == '__main__':
     read_heads = 4
     learning_rate = 1e-4
     momentum = 0.9
+    tasks_results = {} 
 
     train_files = []
     for entryname in os.listdir(trainData+'/train/'):
@@ -46,12 +49,16 @@ if __name__ == '__main__':
     train_files.sort()
 
     for train_file in train_files:
-        train_data = load(train_file)
         task_regexp = r'qa([0-9]{1,2})_([a-z\-]*)_train.txt.pkl'
         task_filename = os.path.basename(train_file)
         task_match_obj = re.match(task_regexp, task_filename)
         task_number = int(task_match_obj.group(1))
         task_name = task_match_obj.group(2).replace('-', ' ')
+        
+        test_file = train_file.replace("train","test")
+        train_data = load(train_file)
+        test_data = load(test_file)
+        
         print("Assessing on task " + str(task_number)+ ": " + task_name)
 
         graph = tf.Graph()
@@ -68,6 +75,7 @@ if __name__ == '__main__':
                     if grad is not None:
                         gradients[i] = (tf.clip_by_value(grad, -10, 10), var)
                 apply_gradients = optimizer.apply_gradients(gradients)
+                softmaxed = tf.nn.softmax(output)
                 llprint("Done!\n")
 
                 llprint("Initializing Variables ... ")
@@ -105,6 +113,39 @@ if __name__ == '__main__':
                         ncomputer.save(session, ckpts_dir, model + trainData + 'Rec_%d' % (task_number))
                         llprint("Done!\n")
                         sys.exit(0)
+                
+                counter = 0
+                results = []
+                correct = 0
+                overall = 0
+                for story in test_data:
+                    astory = np.array(story['inputs'])
+                    questions_indecies = np.argwhere(astory == question_code)
+                    questions_indecies = np.reshape(questions_indecies, (-1,))
+                    target_mask = (astory == target_code)
+                    desired_answers = np.array(story['outputs'])
+                    input_vec, _, seq_len, _ = prepare_sample(story, target_code, len(lexicon_dict))
+                    softmax_output = session.run(softmaxed, feed_dict={ncomputer.input_data: input_vec, ncomputer.sequence_length: seq_len})
+                    softmax_output = np.squeeze(softmax_output, axis=0)
+                    given_answers = np.argmax(softmax_output[target_mask], axis=1)
+                    answers_cursor = 0
+                    for question_indx in questions_indecies:
+                        question_grade = []
+                        targets_cursor = question_indx + 1
+                        while targets_cursor < len(astory) and astory[targets_cursor] == target_code:
+                            question_grade.append(given_answers[answers_cursor] == desired_answers[answers_cursor])
+                            answers_cursor += 1
+                            targets_cursor += 1
+                        results.append(np.prod(question_grade))
+                        correct += int(np.prod(question_grade))
+                        overall += 1
+                    counter += 1 
+                    llprint("\rTask %d: %s ... %d/%d" % (task_number, task_name, counter, len(test_data)))
+                
+                error_rate = 1. - np.mean(results)
+                tasks_results[task_number] = error_rate
+                print( "\nAccuracy: " + "{:.2f}".format(correct / float(overall) * 100.0))
+                logger.write("{:.2f}".format(correct / float(overall) * 100.0) + "\n")
                 
                 llprint("\nSaving Checkpoint ... "),
                 ncomputer.save(session, ckpts_dir, model + trainData + '%d' % (task_number))
