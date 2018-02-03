@@ -311,6 +311,7 @@ def _eunn_loop(state, capacity, diag_vec_list, off_vec_list, diag, fft):
 
     def layer_fft(state, i):
 
+        print("FFT")
         diag_vec = diag_vec_list.read(i)
         off_vec = off_vec_list.read(i)
         diag = math_ops.multiply(state, diag_vec)
@@ -390,7 +391,7 @@ class EUNNCell(RNNCell):
         return self._capacity
 
     def call(self, inputs, states, scope=None):
-        print("Called!")
+        print("Called!",states)
         #with vs.variable_scope(scope or "eunn_cell"):
         state = states[0]
         state = _eunn_loop(state, self._capacity, self.diag_vec, self.off_vec, self.diag, self._fft)

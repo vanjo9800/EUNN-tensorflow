@@ -144,9 +144,12 @@ def vectorize_stories(data, word_idx, story_maxlen, query_maxlen):
         ys.append(y)
     return pad_sequences(xs, maxlen=story_maxlen), pad_sequences(xqs, maxlen=query_maxlen), np.array(ys)
 
-EMBED_HIDDEN_SIZE = 50
+#EMBED_HIDDEN_SIZE = 50
 #RNN = recurrent.LSTM(EMBED_HIDDEN_SIZE)
-RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE,2,False,True))
+#EMBED_HIDDEN_SIZE = 200 
+#RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE))
+EMBED_HIDDEN_SIZE = 200 
+RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE, fft=True))
 SENT_HIDDEN_SIZE = 100
 QUERY_HIDDEN_SIZE = 100
 BATCH_SIZE = 32
@@ -205,18 +208,28 @@ question = layers.Input(shape=(query_maxlen,), dtype='int32')
 encoded_question = layers.Embedding(vocab_size, EMBED_HIDDEN_SIZE)(question)
 encoded_question = layers.Dropout(0.3)(encoded_question)
 with vs.variable_scope("question",reuse=tf.AUTO_REUSE):
-	encoded_question = RNN(encoded_question, initial_state = tf.complex(tf.zeros([1,EMBED_HIDDEN_SIZE]),tf.zeros([1,EMBED_HIDDEN_SIZE])))
-encoded_question = tf.real(encoded_question)
+	encoded_question = RNN(encoded_question)
 encoded_question = layers.RepeatVector(story_maxlen)(encoded_question)
 
-merged = layers.add([encoded_sentence, encoded_question])
-with vs.variable_scope("merge", reuse=tf.AUTO_REUSE):
-	merged = RNN(merged, initial_state = tf.complex(tf.zeros([1,EMBED_HIDDEN_SIZE]),tf.zeros([1,EMBED_HIDDEN_SIZE])))
-merged = tf.real(merged)
-merged = layers.Dropout(0.3)(merged)
+merged = layers.add([encoded_sentence, tf.real(encoded_question)])
+with vs.variable_scope("question", reuse=tf.AUTO_REUSE):
+	merged = RNN(merged)
+merged = layers.Dropout(0.3)(tf.real(merged))
 preds = layers.Dense(vocab_size, activation='softmax')(merged)
 
 model = Model([sentence, question], preds)
+# tf parameter overview
+print("\n===== COUNTING MODEL PARAMETERS =====")
+total_parameters = 0 ; print( "Model overview:" )
+for variable in tf.trainable_variables():
+    shape = variable.get_shape()
+    variable_parameters = 1
+    for dim in shape:
+        variable_parameters *= dim.value
+    print( '\tvariable "{}" has {} parameters'.format(variable.name, variable_parameters) )
+    total_parameters += variable_parameters
+print( "Total of {} parameters".format(total_parameters) )
+print("=====================================\n")
 model.compile(optimizer='adam',
               loss='categorical_crossentropy',
               metrics=['accuracy'])
