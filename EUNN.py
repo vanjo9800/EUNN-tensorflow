@@ -361,7 +361,7 @@ def _eunn_loop(state, capacity, diag_vec_list, off_vec_list, diag, fft):
     return output
 
 
-class EUNNCell(RNNCell):
+class EUNNCell(keras.layers.Layer):
     """Efficient Unitary Network Cell
     The implementation is based on: http://arxiv.org/abs/1612.05231.
 

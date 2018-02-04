@@ -146,10 +146,12 @@ def vectorize_stories(data, word_idx, story_maxlen, query_maxlen):
 
 #EMBED_HIDDEN_SIZE = 50
 #RNN = recurrent.LSTM(EMBED_HIDDEN_SIZE)
+EMBED_HIDDEN_SIZE = 50
+RNN = layers.RNN(tf.nn.rnn_cell.BasicLSTMCell(EMBED_HIDDEN_SIZE, state_is_tuple=True, forget_bias=1))
 #EMBED_HIDDEN_SIZE = 200 
 #RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE))
-EMBED_HIDDEN_SIZE = 200 
-RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE, fft=True))
+#EMBED_HIDDEN_SIZE = 200 
+#RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE, fft=True))
 SENT_HIDDEN_SIZE = 100
 QUERY_HIDDEN_SIZE = 100
 BATCH_SIZE = 32
@@ -230,6 +232,8 @@ for variable in tf.trainable_variables():
     total_parameters += variable_parameters
 print( "Total of {} parameters".format(total_parameters) )
 print("=====================================\n")
+print("Paramerers: ",model.count_params())
+print("Summary: ",model.summary())
 model.compile(optimizer='adam',
               loss='categorical_crossentropy',
               metrics=['accuracy'])
