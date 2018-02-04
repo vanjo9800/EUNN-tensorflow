@@ -148,8 +148,8 @@ def vectorize_stories(data, word_idx, story_maxlen, query_maxlen):
 #RNN = recurrent.LSTM(EMBED_HIDDEN_SIZE)
 #EMBED_HIDDEN_SIZE = 50
 #RNN = layers.RNN(tf.nn.rnn_cell.BasicLSTMCell(EMBED_HIDDEN_SIZE, state_is_tuple=True, forget_bias=1))
-EMBED_HIDDEN_SIZE = 512
-RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE, capacity=4))
+EMBED_HIDDEN_SIZE = 200 
+RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE))
 #EMBED_HIDDEN_SIZE = 200 
 #RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE, fft=True))
 SENT_HIDDEN_SIZE = 100

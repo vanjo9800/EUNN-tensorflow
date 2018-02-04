@@ -3,6 +3,7 @@
 import tensorflow as tf
 import numpy as np
 import keras
+from keras import initializers
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import init_ops
 from tensorflow.python.ops import array_ops
@@ -15,11 +16,13 @@ from tensorflow.python.ops.rnn_cell_impl import RNNCell
 from modrelu import modrelu
 
 
-def _eunn_param(hidden_size, capacity=2, fft=False, comp=True):
+def _eunn_param(self, hidden_size, capacity=2, fft=False, comp=True):
     """
     Create parameters and do the initial preparations
     """
-    theta_phi_initializer = init_ops.random_uniform_initializer(-np.pi, np.pi)
+    theta_phi_initializer = initializers.RandomUniform(
+        minval=-np.pi,
+        maxval=np.pi)
     if fft:
         capacity = int(np.ceil(np.log2(hidden_size)))
 
@@ -32,14 +35,18 @@ def _eunn_param(hidden_size, capacity=2, fft=False, comp=True):
             extra_size = max(0, (hidden_size % (2**size)) - (2**(size - 1)))
             varsize += normal_size + extra_size
 
-        params_theta = vs.get_variable(
-            "theta_0", [varsize], initializer=theta_phi_initializer)
+        params_theta = self.add_weight(
+            shape=(varsize, ),
+            initializer=theta_phi_initializer,
+            name="theta_0")
         cos_theta = math_ops.cos(params_theta)
         sin_theta = math_ops.sin(params_theta)
 
         if comp:
-            params_phi = vs.get_variable(
-                "phi_0", [varsize], initializer=theta_phi_initializer)
+            params_phi = self.add_weight(
+                shape=(varsize, ),
+                initializer=theta_phi_initializer,
+                name="phi_0")
             cos_phi = math_ops.cos(params_phi)
             sin_phi = math_ops.sin(params_phi)
 
@@ -145,26 +152,29 @@ def _eunn_param(hidden_size, capacity=2, fft=False, comp=True):
         hidden_size_a = hidden_size // 2
         hidden_size_b = (hidden_size - 1) // 2
 
-        params_theta_0 = vs.get_variable(
-            "theta_0", [capacity_a, hidden_size_a],
-            initializer=theta_phi_initializer)
+        params_theta_0 = self.add_weight(
+            shape=(capacity_a, hidden_size_a),
+            initializer=theta_phi_initializer,
+            name="theta_0")
         cos_theta_0 = array_ops.reshape(
             math_ops.cos(params_theta_0), [capacity_a, -1, 1])
         sin_theta_0 = array_ops.reshape(
             math_ops.sin(params_theta_0), [capacity_a, -1, 1])
 
-        params_theta_1 = vs.get_variable(
-            "theta_1", [capacity_b, hidden_size_b],
-            initializer=theta_phi_initializer)
+        params_theta_1 = self.add_weight(
+            shape=(capacity_b, hidden_size_b),
+            initializer=theta_phi_initializer,
+            name="theta_1")
         cos_theta_1 = array_ops.reshape(
             math_ops.cos(params_theta_1), [capacity_b, -1, 1])
         sin_theta_1 = array_ops.reshape(
             math_ops.sin(params_theta_1), [capacity_b, -1, 1])
 
         if comp:
-            params_phi_0 = vs.get_variable(
-                "phi_0", [capacity_a, hidden_size_a],
-                initializer=theta_phi_initializer)
+            params_phi_0 = self.add_weight(
+                shape=(capacity_a, hidden_size_a),
+                initializer=theta_phi_initializer,
+                name="phi_0")
             cos_phi_0 = array_ops.reshape(
                 math_ops.cos(params_phi_0), [capacity_a, -1, 1])
             sin_phi_0 = array_ops.reshape(
@@ -203,9 +213,10 @@ def _eunn_param(hidden_size, capacity=2, fft=False, comp=True):
                     [sin_list_0_im, tf.zeros([capacity_a, 1])], 1)
             sin_list_0 = math_ops.complex(sin_list_0_re, sin_list_0_im)
 
-            params_phi_1 = vs.get_variable(
-                "phi_1", [capacity_b, hidden_size_b],
-                initializer=theta_phi_initializer)
+            params_phi_1 = self.add_weight(
+                shape=(capacity_b, hidden_size_b),
+                initializer=theta_phi_initializer,
+                name="phi_1")
             cos_phi_1 = array_ops.reshape(
                 math_ops.cos(params_phi_1), [capacity_b, -1, 1])
             sin_phi_1 = array_ops.reshape(
@@ -325,8 +336,10 @@ def _eunn_param(hidden_size, capacity=2, fft=False, comp=True):
     diag_vec = _toTensorArray(diag_vec)
     off_vec = _toTensorArray(off_vec)
     if comp:
-        omega = vs.get_variable(
-            "omega", [hidden_size], initializer=theta_phi_initializer)
+        omega = self.add_weight(
+            shape=(hidden_size, ),
+            initializer=theta_phi_initializer,
+            name="omega")
         diag = math_ops.complex(math_ops.cos(omega), math_ops.sin(omega))
     else:
         diag = None
@@ -459,30 +472,31 @@ class EUNNCell(keras.layers.Layer):
         self._fft = fft
         self._comp = comp
 
-        self.diag_vec, self.off_vec, self.diag, self._capacity = _eunn_param(
-            hidden_size, capacity, fft, comp)
-
     def build(self, input_shape):
+        kernel_initialzer = initializers.RandomUniform(
+            minval=-0.01,
+            maxval=0.01)
         if self._comp:
             input_matrix_re = self.add_weight(
                 shape=(input_shape[-1], self._hidden_size),
-                initializer='random_uniform',
+                initializer=kernel_initialzer,
                 name='kernel_re')
             input_matrix_im = self.add_weight(
                 shape=(input_shape[-1], self._hidden_size),
-                initializer='random_uniform',
+                initializer=kernel_initialzer,
                 name='kernel_im')
             self.kernel = tf.complex(input_matrix_re, input_matrix_im)
         else:
             self.kernel = self.add_weight(
                 shape=(input_shape[-1], self._hidden_size),
-                initializer='random_uniform',
+                initializer=kernel_initialzer,
                 name='kernel')
 
+        self.diag_vec, self.off_vec, self.diag, self._capacity = _eunn_param(
+            self, self._hidden_size, self._capacity, self._fft, self._comp)
+
         self.bias = self.add_weight(
-            shape=(self._hidden_size,),
-            initializer='zeros',
-            name='bias')
+            shape=(self._hidden_size, ), initializer='zeros', name='bias')
         self.built = True
 
     @property
