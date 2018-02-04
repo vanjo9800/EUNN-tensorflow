@@ -501,7 +501,10 @@ class EUNNCell(keras.layers.Layer):
 
     @property
     def state_size(self):
-        return self._hidden_size
+        if self._comp:
+            return [self._hidden_size,self._hidden_size]
+        else:
+            return self._hidden_size
 
     @property
     def output_size(self):
@@ -513,8 +516,10 @@ class EUNNCell(keras.layers.Layer):
 
     def call(self, inputs, states, scope=None):
         print("Called!", states)
-        #with vs.variable_scope(scope or "eunn_cell"):
-        state = states[0]
+        if self._comp:
+            state = tf.complex(states[0],states[1])
+        else:
+            state = states[0]
         state = _eunn_loop(state, self._capacity, self.diag_vec, self.off_vec,
                            self.diag, self._fft)
 
@@ -527,4 +532,7 @@ class EUNNCell(keras.layers.Layer):
 
         output = self._activation((inputs + state), self.bias, self._comp)
 
-        return output, [output]
+        if self._comp:
+            return tf.real(output), [tf.real(output),tf.imag(output)]
+        else:
+            return output, [output]

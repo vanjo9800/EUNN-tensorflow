@@ -209,14 +209,12 @@ encoded_sentence = layers.Dropout(0.3)(encoded_sentence)
 question = layers.Input(shape=(query_maxlen,), dtype='int32')
 encoded_question = layers.Embedding(vocab_size, EMBED_HIDDEN_SIZE)(question)
 encoded_question = layers.Dropout(0.3)(encoded_question)
-with vs.variable_scope("question",reuse=tf.AUTO_REUSE):
-    encoded_question = RNN(encoded_question)
+encoded_question = RNN(encoded_question)
 encoded_question = layers.RepeatVector(story_maxlen)(encoded_question)
 
 merged = layers.add([encoded_sentence, tf.real(encoded_question)])
-with vs.variable_scope("question", reuse=tf.AUTO_REUSE):
-    merged = RNN(merged)
-merged = layers.Dropout(0.3)(tf.real(merged))
+merged = RNN(merged)
+merged = layers.Dropout(0.3)(merged)
 preds = layers.Dense(vocab_size, activation='softmax')(merged)
 
 model = Model([sentence, question], preds)
