@@ -146,10 +146,10 @@ def vectorize_stories(data, word_idx, story_maxlen, query_maxlen):
 
 #EMBED_HIDDEN_SIZE = 50
 #RNN = recurrent.LSTM(EMBED_HIDDEN_SIZE)
-EMBED_HIDDEN_SIZE = 50
-RNN = layers.RNN(tf.nn.rnn_cell.BasicLSTMCell(EMBED_HIDDEN_SIZE, state_is_tuple=True, forget_bias=1))
-#EMBED_HIDDEN_SIZE = 200 
-#RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE))
+#EMBED_HIDDEN_SIZE = 50
+#RNN = layers.RNN(tf.nn.rnn_cell.BasicLSTMCell(EMBED_HIDDEN_SIZE, state_is_tuple=True, forget_bias=1))
+EMBED_HIDDEN_SIZE = 200 
+RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE))
 #EMBED_HIDDEN_SIZE = 200 
 #RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE, fft=True))
 SENT_HIDDEN_SIZE = 100
@@ -210,12 +210,12 @@ question = layers.Input(shape=(query_maxlen,), dtype='int32')
 encoded_question = layers.Embedding(vocab_size, EMBED_HIDDEN_SIZE)(question)
 encoded_question = layers.Dropout(0.3)(encoded_question)
 with vs.variable_scope("question",reuse=tf.AUTO_REUSE):
-	encoded_question = RNN(encoded_question)
+    encoded_question = RNN(encoded_question)
 encoded_question = layers.RepeatVector(story_maxlen)(encoded_question)
 
 merged = layers.add([encoded_sentence, tf.real(encoded_question)])
 with vs.variable_scope("question", reuse=tf.AUTO_REUSE):
-	merged = RNN(merged)
+    merged = RNN(merged)
 merged = layers.Dropout(0.3)(tf.real(merged))
 preds = layers.Dense(vocab_size, activation='softmax')(merged)
 
