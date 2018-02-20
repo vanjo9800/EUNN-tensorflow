@@ -70,9 +70,11 @@ from keras.layers.embeddings import Embedding
 from keras import layers
 from keras.layers import recurrent
 from keras.models import Model
+from keras import backend as K
 from keras.preprocessing.sequence import pad_sequences
 from tensorflow.python.ops import variable_scope as vs
 import tensorflow as tf
+import sys
 
 def tokenize(sent):
     '''Return the tokens of a sentence including punctuation.
@@ -144,12 +146,21 @@ def vectorize_stories(data, word_idx, story_maxlen, query_maxlen):
         ys.append(y)
     return pad_sequences(xs, maxlen=story_maxlen), pad_sequences(xqs, maxlen=query_maxlen), np.array(ys)
 
-#EMBED_HIDDEN_SIZE = 50
-#RNN = recurrent.LSTM(EMBED_HIDDEN_SIZE)
+tf.reset_default_graph() # for being sure
+K.clear_session() # removing session, it will instance another
+
+
+model = sys.argv[1]
+if model == "LSTM":
+	EMBED_HIDDEN_SIZE = 50
+	RNN = recurrent.LSTM(EMBED_HIDDEN_SIZE)
+else:
+	EMBED_HIDDEN_SIZE = 200 
+	RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE))
 #EMBED_HIDDEN_SIZE = 50
 #RNN = layers.RNN(tf.nn.rnn_cell.BasicLSTMCell(EMBED_HIDDEN_SIZE, state_is_tuple=True, forget_bias=1))
-EMBED_HIDDEN_SIZE = 200 
-RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE))
+#EMBED_HIDDEN_SIZE = 200 
+#RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE, capacity=4))
 #EMBED_HIDDEN_SIZE = 200 
 #RNN = layers.RNN(EUNNCell(EMBED_HIDDEN_SIZE, fft=True))
 SENT_HIDDEN_SIZE = 100
@@ -172,11 +183,53 @@ tar = tarfile.open(path)
 # Default QA1 with 1000 samples
 # challenge = 'tasks_1-20_v1-2/en/qa1_single-supporting-fact_{}.txt'
 # QA1 with 10,000 samples
-challenge = 'tasks_1-20_v1-2/en-10k/qa1_single-supporting-fact_{}.txt'
+#challenge = 'tasks_1-20_v1-2/en-10k/qa1_single-supporting-fact_{}.txt'
 # QA2 with 1000 samples
 #challenge = 'tasks_1-20_v1-2/en/qa2_two-supporting-facts_{}.txt'
 # QA2 with 10,000 samples
-# challenge = 'tasks_1-20_v1-2/en-10k/qa2_two-supporting-facts_{}.txt'
+
+task = sys.argv[2]
+if task=="1":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa1_single-supporting-fact_{}.txt'
+elif task=="2":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa2_two-supporting-facts_{}.txt'
+elif task=="3":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa3_three-supporting-facts_{}.txt'
+elif task=="4":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa4_two-arg-relations_{}.txt'
+elif task=="5":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa5_three-arg-relations_{}.txt'
+elif task=="6":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa6_yes-no-questions_{}.txt'
+elif task=="7":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa7_counting_{}.txt'
+elif task=="8":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa8_lists-sets_{}.txt'
+elif task=="9":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa9_simple-negation_{}.txt'
+elif task=="10":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa10_indefinite-knowledge_{}.txt'
+elif task=="11":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa11_basic-coreference_{}.txt'
+elif task=="12":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa12_conjunction_{}.txt'
+elif task=="13":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa13_compound-coreference_{}.txt'
+elif task=="14":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa14_time-reasoning_{}.txt'
+elif task=="15":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa15_basic-deduction_{}.txt'
+elif task=="16":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa16_basic-induction_{}.txt'
+elif task=="17":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa17_positional-reasoning_{}.txt'
+elif task=="18":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa18_size-reasoning_{}.txt'
+elif task=="19":
+	challenge = 'tasks_1-20_v1-2/en-10k/qa19_path-finding_{}.txt'    
+else:
+	challenge = 'tasks_1-20_v1-2/en-10k/qa20_agents-motivations_{}.txt'
+
 train = get_stories(tar.extractfile(challenge.format('train')))
 test = get_stories(tar.extractfile(challenge.format('test')))
 
